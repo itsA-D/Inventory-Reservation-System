@@ -66,12 +66,6 @@ This structure keeps UI code in `app/`, shared UI in `components/`, and server-s
 - Product listing (server components) shows available stock per warehouse.
 - `POST /api/reservations` atomically reserves stock (10-minute hold). Confirm and release endpoints finalize or cancel reservations.
 
-## Live URL
-
-Replace with your deployed URL:
-
-https://your-deployed-app.vercel.app
-
 ## Local Development
 
 1. Clone the repository
