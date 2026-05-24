@@ -12,7 +12,6 @@
 
 ## Table of Contents
 
-- [Live Demo](#live-demo)
 - [What This Is](#what-this-is)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -20,28 +19,34 @@
 
 A race-condition–safe inventory reservation system for multi-warehouse retail. Customers can reserve stock for a 10-minute payment window; reservations are confirmed on payment or released on expiry.
 
-## Live Demo
-
-https://your-deployed-app.vercel.app (replace with real URL)
-
 ## Project Structure
 
-Top-level project layout (important folders shown):
+Top-level project layout with key files to help navigation:
 
-```text
-app/                # Next.js App Router pages + components
-  api/              # API routes (reservations, products, cron jobs)
-  components/       # Route-level components
-components/         # Shared UI primitives and layout components
-lib/                # Core server logic (reservation, redis, db helpers)
-data/               # Seed data / datasets used by the app
-prisma/             # Prisma schema, migrations and seed
-scripts/            # Utility scripts (concurrency test, idempotency test)
-projects/           # project-specific assets (if any)
-README.md           # This file
-package.json
-tsconfig.json
-```
+- `app/` — Next.js App Router routes and route-level components
+  - `app/api/reservations/route.ts` — reservation API endpoints
+  - `app/api/products/route.ts` — product listing API
+  - `app/reservations/[id]/page.tsx` — reservation details/checkout
+  - `app/sku/[id]/page.tsx` — SKU detail and reserve button
+- `components/` — shared layout and UI components (Sidebar, Navbar, Shell)
+- `lib/` — core server logic and helpers
+  - `lib/reservation.ts` — expiry & reservation helpers
+  - `lib/redis.ts` — idempotency + Redis helpers
+  - `lib/db.ts` — Prisma client wrapper
+- `prisma/` — Prisma schema, migrations and seed data
+  - `prisma/schema.prisma`
+- `scripts/` — dev utilities and tests
+  - `scripts/test-concurrency.ts` — concurrency test script
+- `data/` — seed datasets and lists used by the app
+- `app/api/cron/expire-reservations/route.ts` — cron endpoint for sweeping expiries
+
+Example files to inspect first:
+
+- [Reservation logic](lib/reservation.ts)
+- [API handlers](app/api/reservations/route.ts)
+- [Prisma schema](prisma/schema.prisma)
+
+This structure keeps UI code in `app/`, shared UI in `components/`, and server-side helpers in `lib/` so you can find concurrency and idempotency logic quickly.
 
 ## Tech Stack
 
