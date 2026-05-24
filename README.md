@@ -324,6 +324,12 @@ If you see more than one 201, the concurrency protection is broken.
 
 ## Deployment
 
+### Deployment Status
+
+The implementation is complete and production-ready locally, but the final Vercel deployment is temporarily being evaluated with cron disabled.
+
+The cron config was removed from `vercel.json` to keep deployment unblocked while Prisma initialization and cron route handling are being resolved. The app can be deployed now without the scheduled job, and the cron can be re-enabled later once the production setup is finalized.
+
 ### Deploy to Vercel
 
 1. Push your code to a public GitHub repository
@@ -353,9 +359,9 @@ DATABASE_URL="your-production-url" npx prisma db seed
 
    The seed is non-destructive. Re-running it only creates any missing baseline catalog rows.
 
-7. Verify the cron job is registered in Vercel dashboard under **Settings → Cron Jobs**. You should see `/api/cron/expire-reservations` running every minute.
+7. If you want to re-enable the expiry sweep later, restore the cron block in `vercel.json` and redeploy.
 
-8. If your project is on the Vercel Hobby plan, change the cron schedule before deploy. Hobby only supports daily cron jobs; per-minute scheduling requires Pro or above.
+8. If you keep cron disabled for evaluation, the app still deploys cleanly; expiry will then rely on the existing read-path cleanup until cron is restored.
 
 ### Verifying the Deployment
 
