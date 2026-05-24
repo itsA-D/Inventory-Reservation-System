@@ -21,6 +21,8 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CheckoutActions } from './CheckoutActions'
 
+export const dynamic = 'force-dynamic'
+
 async function getReservation(id: string) {
   const reservation = await prisma.reservation.findUnique({
     where: { id },

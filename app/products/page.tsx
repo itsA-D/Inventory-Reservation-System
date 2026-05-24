@@ -4,6 +4,8 @@ import { ProductWithStock } from '@/lib/schemas'
 
 import ProductCard from '../components/ProductCard'
 
+export const dynamic = 'force-dynamic'
+
 async function getProducts(): Promise<ProductWithStock[]> {
   const products = await prisma.product.findMany({
     include: {

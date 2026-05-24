@@ -4,6 +4,8 @@ import { WarehouseAnalytics } from '@/components/ui/WarehouseAnalytics'
 import { prisma } from '@/lib/db'
 import { ProductWithStock } from '@/lib/schemas'
 
+export const dynamic = 'force-dynamic'
+
 async function getAnalyticsData() {
   const [products, totalStats, expiringSoonCount] = await Promise.all([
     prisma.product.findMany({

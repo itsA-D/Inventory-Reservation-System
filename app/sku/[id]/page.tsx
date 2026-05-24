@@ -20,6 +20,8 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ReserveButton } from './ReserveButton'
 
+export const dynamic = 'force-dynamic'
+
 async function getProduct(id: string) {
   const product = await prisma.product.findUnique({
     where: { id },

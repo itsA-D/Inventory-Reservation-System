@@ -18,6 +18,8 @@ import { ReservationTimeline } from '@/components/ui/ReservationTimeline'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ProductWithStock } from '@/lib/schemas'
 
+export const dynamic = 'force-dynamic'
+
 async function getDashboardData() {
   const [products, recentReservations, totalStats] = await Promise.all([
     prisma.product.findMany({

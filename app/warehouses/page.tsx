@@ -1,6 +1,8 @@
 import Shell from '@/components/layout/Shell'
 import { prisma } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 async function getWarehouses() {
   const warehouses = await prisma.warehouse.findMany({
     include: {
