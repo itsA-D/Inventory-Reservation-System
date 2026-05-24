@@ -16,11 +16,32 @@
 - [What This Is](#what-this-is)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
-# allo. — Inventory Reservation System
+## What This Is
 
 A race-condition–safe inventory reservation system for multi-warehouse retail. Customers can reserve stock for a 10-minute payment window; reservations are confirmed on payment or released on expiry.
 
-Live demo: https://your-deployed-app.vercel.app (replace with real URL)
+## Live Demo
+
+https://your-deployed-app.vercel.app (replace with real URL)
+
+## Project Structure
+
+Top-level project layout (important folders shown):
+
+```text
+app/                # Next.js App Router pages + components
+  api/              # API routes (reservations, products, cron jobs)
+  components/       # Route-level components
+components/         # Shared UI primitives and layout components
+lib/                # Core server logic (reservation, redis, db helpers)
+data/               # Seed data / datasets used by the app
+prisma/             # Prisma schema, migrations and seed
+scripts/            # Utility scripts (concurrency test, idempotency test)
+projects/           # project-specific assets (if any)
+README.md           # This file
+package.json
+tsconfig.json
+```
 
 ## Tech Stack
 
