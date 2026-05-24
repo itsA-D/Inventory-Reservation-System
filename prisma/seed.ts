@@ -13,6 +13,14 @@ type ProductSeed = {
   price: string
 }
 
+const productImageUrls: Record<string, string> = {
+  'Classic White T-Shirt': 'https://loremflickr.com/800/800/t-shirt,shirt,clothing?lock=classic-white-t-shirt',
+  'Leather Sneakers': 'https://loremflickr.com/800/800/sneakers,shoes,leather?lock=leather-sneakers',
+  'Canvas Backpack': 'https://loremflickr.com/800/800/backpack,bag,canvas?lock=canvas-backpack',
+  'Wireless Headphones': 'https://loremflickr.com/800/800/headphones,audio,wireless?lock=wireless-headphones',
+  'Minimalist Watch': 'https://loremflickr.com/800/800/watch,wristwatch,minimalist?lock=minimalist-watch',
+}
+
 const warehouses: WarehouseSeed[] = [
   {
     name: 'Mumbai Central',
@@ -85,24 +93,26 @@ const totalUnitsByProductAndWarehouse: Record<string, Record<string, number>> = 
 }
 
 function productImageUrl(name: string): string {
-  const seed = name.toLowerCase().replace(/\s+/g, '-')
-  return `https://picsum.photos/seed/${seed}/400/400`
+  return productImageUrls[name] ?? 'https://loremflickr.com/800/800/products?lock=default-product'
 }
 
 async function main(): Promise<void> {
-  await prisma.reservation.deleteMany()
-  await prisma.inventoryItem.deleteMany()
-  await prisma.product.deleteMany()
-  await prisma.warehouse.deleteMany()
-
-  const createdWarehouses = await Promise.all(
-    warehouses.map((warehouse) => prisma.warehouse.create({ data: warehouse }))
+  const seededWarehouses = await Promise.all(
+    warehouses.map((warehouse) =>
+      prisma.warehouse.upsert({
+        where: { name: warehouse.name },
+        update: {},
+        create: warehouse,
+      })
+    )
   )
 
-  const createdProducts = await Promise.all(
+  const seededProducts = await Promise.all(
     products.map((product) =>
-      prisma.product.create({
-        data: {
+      prisma.product.upsert({
+        where: { name: product.name },
+        update: {},
+        create: {
           name: product.name,
           description: product.description,
           price: product.price,
@@ -112,20 +122,39 @@ async function main(): Promise<void> {
     )
   )
 
-  const inventoryRows = createdProducts.flatMap((product) =>
-    createdWarehouses.map((warehouse) => ({
-      productId: product.id,
-      warehouseId: warehouse.id,
-      totalUnits: totalUnitsByProductAndWarehouse[product.name][warehouse.name],
-      reservedUnits: 0,
-    }))
+  let createdInventoryRows = 0
+
+  for (const product of seededProducts) {
+    for (const warehouse of seededWarehouses) {
+      const existingInventory = await prisma.inventoryItem.findUnique({
+        where: {
+          productId_warehouseId: {
+            productId: product.id,
+            warehouseId: warehouse.id,
+          },
+        },
+      })
+
+      if (existingInventory) {
+        continue
+      }
+
+      await prisma.inventoryItem.create({
+        data: {
+          productId: product.id,
+          warehouseId: warehouse.id,
+          totalUnits: totalUnitsByProductAndWarehouse[product.name][warehouse.name],
+          reservedUnits: 0,
+        },
+      })
+
+      createdInventoryRows += 1
+    }
+  }
+
+  console.log(
+    `Seed complete: ${seededWarehouses.length} warehouses, ${seededProducts.length} products, ${createdInventoryRows} new inventory rows created.`
   )
-
-  await prisma.inventoryItem.createMany({
-    data: inventoryRows,
-  })
-
-  console.log('Seed complete: 3 warehouses, 5 products, 15 inventory rows.')
 }
 
 main()

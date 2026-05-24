@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 import { prisma } from '@/lib/db'
@@ -9,9 +10,39 @@ import {
   CreateReservationSchema,
   ErrorResponse,
   ErrorResponseSchema,
+  ReservationListItem,
+  ReservationListItemSchema,
   ReservationResponse,
   ReservationResponseSchema,
 } from '@/lib/schemas'
+
+export const revalidate = 0
+
+async function getReservationByIdempotencyKey(
+  idempotencyKey: string
+): Promise<ReservationResponse | null> {
+  const reservation = await prisma.reservation.findUnique({
+    where: { idempotencyKey },
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+        },
+      },
+      warehouse: {
+        select: {
+          id: true,
+          name: true,
+          location: true,
+        },
+      },
+    },
+  })
+
+  return reservation ? toReservationResponse(reservation) : null
+}
 
 function toReservationResponse(data: {
   id: string
@@ -47,6 +78,96 @@ function toReservationResponse(data: {
   })
 }
 
+function toReservationListItem(data: {
+  id: string
+  status: string
+  quantity: number
+  expiresAt: Date
+  createdAt: Date
+  updatedAt: Date
+  product: {
+    id: string
+    name: string
+    price: { toString(): string }
+  }
+  warehouse: {
+    id: string
+    name: string
+    location: string
+  }
+}): ReservationListItem {
+  return ReservationListItemSchema.parse({
+    id: data.id,
+    status: data.status,
+    quantity: data.quantity,
+    expiresAt: data.expiresAt.toISOString(),
+    createdAt: data.createdAt.toISOString(),
+    updatedAt: data.updatedAt.toISOString(),
+    product: {
+      id: data.product.id,
+      name: data.product.name,
+      price: data.product.price.toString(),
+    },
+    warehouse: {
+      id: data.warehouse.id,
+      name: data.warehouse.name,
+      location: data.warehouse.location,
+    },
+  })
+}
+
+export async function GET(
+  request: NextRequest
+): Promise<NextResponse<ReservationListItem[] | ErrorResponse>> {
+  try {
+    const status = request.nextUrl.searchParams.get('status')
+    const allowedStatuses = Object.values(ReservationStatusValues)
+
+    if (status && !allowedStatuses.includes(status as (typeof allowedStatuses)[number])) {
+      return NextResponse.json(
+        ErrorResponseSchema.parse({
+          error: 'VALIDATION_ERROR',
+          message: 'Invalid reservation status',
+        }),
+        { status: 400 }
+      )
+    }
+
+    const reservations = await prisma.reservation.findMany({
+      where: status ? { status } : undefined,
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+          },
+        },
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+
+    return NextResponse.json(reservations.map(toReservationListItem))
+  } catch {
+    return NextResponse.json(
+      ErrorResponseSchema.parse({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch reservations',
+      }),
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ReservationResponse | ErrorResponse>> {
@@ -59,6 +180,12 @@ export async function POST(
         return NextResponse.json(cached.body as ReservationResponse | ErrorResponse, {
           status: cached.status,
         })
+      }
+
+      const existingReservation = await getReservationByIdempotencyKey(idempotencyKey)
+      if (existingReservation) {
+        await setIdempotencyResult(idempotencyKey, existingReservation, 201)
+        return NextResponse.json(existingReservation, { status: 201 })
       }
     }
 
@@ -149,6 +276,22 @@ export async function POST(
 
     return NextResponse.json(responseBody, { status: 201 })
   } catch (error: unknown) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const idempotencyKey = request.headers.get('Idempotency-Key')
+
+      if (idempotencyKey) {
+        const existingReservation = await getReservationByIdempotencyKey(idempotencyKey)
+
+        if (existingReservation) {
+          await setIdempotencyResult(idempotencyKey, existingReservation, 201)
+          return NextResponse.json(existingReservation, { status: 201 })
+        }
+      }
+    }
+
     if (error instanceof InsufficientStockError) {
       const payload = ErrorResponseSchema.parse({
         error: 'INSUFFICIENT_STOCK',

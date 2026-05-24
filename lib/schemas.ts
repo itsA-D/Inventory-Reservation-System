@@ -56,6 +56,35 @@ export const ProductWithStockSchema = z
   })
   .strict()
 
+const ReservationListProductSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    price: z.union([z.number(), z.string()]),
+  })
+  .strict()
+
+const ReservationListWarehouseSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    location: z.string(),
+  })
+  .strict()
+
+export const ReservationListItemSchema = z
+  .object({
+    id: z.string().uuid(),
+    status: z.enum(['PENDING', 'CONFIRMED', 'RELEASED', 'EXPIRED']),
+    quantity: z.number().int().positive(),
+    expiresAt: z.string().datetime(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+    product: ReservationListProductSchema,
+    warehouse: ReservationListWarehouseSchema,
+  })
+  .strict()
+
 export const ErrorResponseSchema = z
   .object({
     error: z.string(),
@@ -66,4 +95,5 @@ export const ErrorResponseSchema = z
 export type CreateReservationInput = z.infer<typeof CreateReservationSchema>
 export type ReservationResponse = z.infer<typeof ReservationResponseSchema>
 export type ProductWithStock = z.infer<typeof ProductWithStockSchema>
+export type ReservationListItem = z.infer<typeof ReservationListItemSchema>
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>

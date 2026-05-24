@@ -5,7 +5,20 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  --bg0: #09090b;
+  --bg1: #0f1014;
+  --bg2: #17181f;
+  --bg3: #1f2028;
+  --text1: #fafafa;
+  --text2: #a1a1aa;
+  --text3: #71717a;
+  --brand: #6c63ff;
+  --brand2: #8b85ff;
+  --red-bg: rgba(239, 68, 68, 0.16);
+  --red: #f87171;
+  --amber-bg: rgba(245, 158, 11, 0.16);
+  --amber: #fbbf24;
 }
 
 html,
@@ -15,8 +28,8 @@ body {
 }
 
 body {
-  background: #ffffff;
-  color: #111827;
+  background: var(--bg0);
+  color: var(--text1);
 }
 
 @layer base {

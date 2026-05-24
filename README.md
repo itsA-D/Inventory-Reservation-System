@@ -66,21 +66,32 @@ npm install
 ```bash
 cp .env.example .env.local
 # edit .env.local and fill DATABASE_URL, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, CRON_SECRET, NEXT_PUBLIC_APP_URL
+# DATABASE_URL must be a PostgreSQL connection string
 ```
 
-4. Run migrations
+4. Start local PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+The default local connection string is `postgresql://postgres:postgres@localhost:5432/allo_health?schema=public`.
+
+5. Run migrations
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-5. Seed the database
+6. Seed the database
 
 ```bash
 npx prisma db seed
 ```
 
-6. Start the dev server
+The seed is create-only and safe to rerun. It creates missing baseline catalog rows and does not delete existing data.
+
+7. Start the dev server
 
 ```bash
 npm run dev
@@ -93,7 +104,7 @@ Open: http://localhost:3000
 Expiry is implemented with two complementary mechanisms:
 
 - Lazy cleanup on reads: `GET /api/products` calls `expireStaleReservations()` before returning product data. This ensures product listing always reflects released stock.
-- Periodic cron sweep: a Vercel cron (`/api/cron/expire-reservations`) runs every minute (vercel.json) and calls the same cleanup function to ensure expired reservations are released even when no read occurs.
+- Periodic cron sweep: a Vercel cron (`/api/cron/expire-reservations`) runs every minute (vercel.json) and calls the same cleanup function to ensure expired reservations are released even when no read occurs. Per-minute Vercel cron scheduling requires a Pro plan or above.
 
 Both call the shared `lib/reservation.ts` logic which atomically decrements `reservedUnits` and marks reservations `EXPIRED`.
 
@@ -330,17 +341,21 @@ If you see more than one 201, the concurrency protection is broken.
 
 4. Deploy. After the first deploy, copy the production URL and update `NEXT_PUBLIC_APP_URL`.
 
-5. Run production migration:
+5. Run production migration against the production PostgreSQL database:
    ```bash
    npx prisma migrate deploy
    ```
 
-6. Seed the production database (one time):
+6. Seed the production database after the schema is live:
    ```bash
-   DATABASE_URL="your-production-url" npx prisma db seed
-   ```
+DATABASE_URL="your-production-url" npx prisma db seed
+```
+
+   The seed is non-destructive. Re-running it only creates any missing baseline catalog rows.
 
 7. Verify the cron job is registered in Vercel dashboard under **Settings → Cron Jobs**. You should see `/api/cron/expire-reservations` running every minute.
+
+8. If your project is on the Vercel Hobby plan, change the cron schedule before deploy. Hobby only supports daily cron jobs; per-minute scheduling requires Pro or above.
 
 ### Verifying the Deployment
 

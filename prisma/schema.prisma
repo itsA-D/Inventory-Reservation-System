@@ -9,7 +9,7 @@ generator client {
 
 model Product {
   id           String          @id @default(uuid())
-  name         String
+  name         String          @unique
   description  String?
   price        Decimal
   imageUrl     String?
@@ -20,7 +20,7 @@ model Product {
 
 model Warehouse {
   id           String          @id @default(uuid())
-  name         String
+  name         String          @unique
   location     String
   inventory    InventoryItem[]
   reservations Reservation[]
