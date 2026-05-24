@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { expireStaleReservations } from '@/lib/reservation'
 import { ErrorResponse, ErrorResponseSchema } from '@/lib/schemas'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 type CronResponse = {
   expired: number
   timestamp: string
