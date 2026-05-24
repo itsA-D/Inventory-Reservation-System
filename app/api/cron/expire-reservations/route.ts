@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { expireStaleReservations } from '@/lib/reservation'
-import { ErrorResponse, ErrorResponseSchema } from '@/lib/schemas'
+import type { ErrorResponse } from '@/lib/schemas'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -14,6 +13,7 @@ type CronResponse = {
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<CronResponse | ErrorResponse>> {
+  const { ErrorResponseSchema } = await import('@/lib/schemas')
   const authHeader = request.headers.get('authorization')
   const expected = `Bearer ${process.env.CRON_SECRET}`
 
@@ -28,6 +28,7 @@ export async function GET(
   }
 
   try {
+    const { expireStaleReservations } = await import('@/lib/reservation')
     const expired = await expireStaleReservations()
 
     return NextResponse.json({
