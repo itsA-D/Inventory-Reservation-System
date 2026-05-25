@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -8,8 +8,6 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Clock,
-  ChevronLeft,
-  ChevronRight,
   X,
   Shield,
   Package,
@@ -136,13 +134,27 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
     setIsMobileOpen(false)
   }
 
+  const handleBrandClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (isCollapsed) {
+      event.preventDefault()
+      setIsCollapsed(false)
+    }
+  }
+
   const SidebarContent = ({ isMobile = false }) => {
     const showFull = !isCollapsed || isMobile
 
     return (
       <div className="flex h-full flex-col border-r border-[rgba(255,255,255,0.04)] bg-[var(--bg1)] text-[var(--text1)] glass-sidebar">
-        <div className="flex h-16 items-center justify-between border-b border-[rgba(255,255,255,0.04)] px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
+        <div className="flex h-16 items-center border-b border-[rgba(255,255,255,0.04)] px-2">
+          <Link
+            href="/"
+            onClick={handleBrandClick}
+            className={cn(
+              'flex h-11 items-center gap-2 rounded-xl font-semibold transition-colors duration-200 hover:bg-[var(--bg2)]',
+              showFull ? 'w-full px-3 justify-start' : 'w-11 justify-center px-0'
+            )}
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg2)] text-[var(--text1)]">
               <Shield className="h-4 w-4" />
             </div>
@@ -159,16 +171,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
             >
               <X className="h-5 w-5" />
             </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden md:flex size-7 text-[var(--text2)] hover:bg-[var(--bg2)] hover:text-[var(--text1)]"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-          )}
+          ) : null}
         </div>
 
         {showFull && (
