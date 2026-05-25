@@ -152,7 +152,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
             href="/"
             onClick={handleBrandClick}
             className={cn(
-              'flex h-11 items-center gap-2 rounded-xl font-semibold transition-colors duration-200 hover:bg-[var(--bg2)]',
+              'flex h-11 items-center gap-2 rounded-xl font-semibold transition-colors duration-200',
               showFull ? 'w-full px-3 justify-start' : 'w-11 justify-center px-0'
             )}
           >
