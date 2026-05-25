@@ -28,41 +28,56 @@ type Warehouse = {
 }
 
 export default async function AnalyticsPage() {
-  // Use relative API paths so server-side rendering works regardless of NEXT_PUBLIC_APP_URL
-  const base = process.env.NEXT_PUBLIC_APP_URL || ''
-  async function safeFetch<T>(url: string): Promise<{ ok: boolean; data?: T; error?: string }> {
-    try {
-      const res = await fetch(url, { cache: 'no-store' })
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        return { ok: false, error: `HTTP ${res.status} ${res.statusText} - ${text}` }
-      }
-      const data = (await res.json()) as T
-      return { ok: true, data }
-    } catch (err: any) {
-      return { ok: false, error: String(err?.message ?? err) }
-    }
-  }
+  // Read directly from the database during SSR to avoid network/internal fetch issues
+  const { prisma } = await import('@/lib/db')
 
-  const [prodRes, resRes, whRes] = await Promise.all([
-    safeFetch<Product[]>(`${base}/api/products`),
-    safeFetch<Reservation[]>(`${base}/api/reservations`),
-    safeFetch<Warehouse[]>(`${base}/api/warehouses`),
-  ])
-
-  const products = prodRes.ok && prodRes.data ? prodRes.data : []
-  const reservations = resRes.ok && resRes.data ? resRes.data : []
-  const warehouses = whRes.ok && whRes.data ? whRes.data : []
-
+  let products: Product[] = []
+  let reservations: Reservation[] = []
+  let warehouses: Warehouse[] = []
   const errors: string[] = []
-  if (!prodRes.ok) errors.push(`products: ${prodRes.error}`)
-  if (!resRes.ok) errors.push(`reservations: ${resRes.error}`)
-  if (!whRes.ok) errors.push(`warehouses: ${whRes.error}`)
 
-  if (errors.length > 0) {
-    // Log server-side for debugging
-    // eslint-disable-next-line no-console
-    console.error('Analytics data fetch errors:', errors)
+  try {
+    const [dbProducts, dbReservations, dbWarehouses] = await Promise.all([
+      prisma.product.findMany({
+        include: {
+          inventory: {
+            include: { warehouse: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.reservation.findMany({
+        include: {
+          product: { select: { id: true, name: true, price: true } },
+          warehouse: { select: { id: true, name: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.warehouse.findMany({ orderBy: { name: 'asc' } }),
+    ])
+
+    products = dbProducts.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      inventory: p.inventory.map((i: any) => ({
+        warehouseName: i.warehouse?.name ?? i.warehouseName ?? '',
+        totalUnits: i.totalUnits,
+        availableUnits: i.availableUnits ?? (i.totalUnits - (i.reservedUnits ?? 0)),
+        reservedUnits: i.reservedUnits,
+      })),
+    }))
+
+    reservations = dbReservations.map((r: any) => ({
+      id: r.id,
+      status: r.status,
+      createdAt: r.createdAt?.toISOString(),
+      updatedAt: r.updatedAt?.toISOString(),
+    }))
+
+    warehouses = dbWarehouses.map((w: any) => ({ id: w.id, name: w.name }))
+  } catch (err: any) {
+    console.error('Analytics DB error:', err)
+    errors.push(String(err?.message ?? err))
   }
 
   return (
@@ -70,14 +85,10 @@ export default async function AnalyticsPage() {
       {errors.length > 0 ? (
         <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[var(--bg-card)] p-6 text-center text-sm text-[var(--text-primary)]">
           <div className="font-semibold">Partial data load</div>
-          <div className="text-[var(--text-secondary)] mt-2">Some analytics data could not be loaded. Check server logs or network connectivity.</div>
+          <div className="text-[var(--text-secondary)] mt-2">Some analytics data could not be loaded. Check server logs or database connectivity.</div>
         </div>
       ) : null}
-      <IndustrialDashboard 
-        products={products} 
-        reservations={reservations} 
-        warehouses={warehouses} 
-      />
+      <IndustrialDashboard products={products} reservations={reservations} warehouses={warehouses} />
     </Shell>
   )
 }
