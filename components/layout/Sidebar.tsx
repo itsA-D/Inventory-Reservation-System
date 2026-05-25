@@ -140,7 +140,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
     const showFull = !isCollapsed || isMobile
 
     return (
-      <div className="flex h-full flex-col border-r border-[rgba(255,255,255,0.04)] bg-[var(--bg1)] text-[var(--text1)]">
+      <div className="flex h-full flex-col border-r border-[rgba(255,255,255,0.04)] bg-[var(--bg1)] text-[var(--text1)] glass-sidebar">
         <div className="flex h-16 items-center justify-between border-b border-[rgba(255,255,255,0.04)] px-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg2)] text-[var(--text1)]">

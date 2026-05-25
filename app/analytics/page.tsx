@@ -1,88 +1,46 @@
 import Shell from '@/components/layout/Shell'
-import { MetricCard } from '@/components/ui/MetricCard'
-import { WarehouseAnalytics } from '@/components/ui/WarehouseAnalytics'
-import { prisma } from '@/lib/db'
-import { ProductWithStock } from '@/lib/schemas'
+import React from 'react'
+import IndustrialDashboard from './IndustrialDashboard'
 
 export const dynamic = 'force-dynamic'
 
-async function getAnalyticsData() {
-  const [products, totalStats, expiringSoonCount] = await Promise.all([
-    prisma.product.findMany({
-      include: {
-        inventory: {
-          include: {
-            warehouse: true,
-          },
-        },
-      },
-    }),
-    prisma.inventoryItem.aggregate({
-      _sum: {
-        totalUnits: true,
-        reservedUnits: true,
-      },
-    }),
-    prisma.reservation.count({
-      where: {
-        status: 'PENDING',
-        expiresAt: {
-          gt: new Date(),
-          lt: new Date(Date.now() + 2 * 60 * 1000),
-        },
-      },
-    }),
-  ])
+type Product = {
+  id: string
+  name: string
+  inventory: {
+    warehouseName: string
+    totalUnits: number
+    availableUnits: number
+    reservedUnits: number
+  }[]
+}
 
-  const productsWithStock: ProductWithStock[] = products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: product.price.toString(),
-    imageUrl: product.imageUrl,
-    inventory: product.inventory.map((inv) => ({
-      warehouseId: inv.warehouseId,
-      warehouseName: inv.warehouse.name,
-      totalUnits: inv.totalUnits,
-      reservedUnits: inv.reservedUnits,
-      availableUnits: inv.totalUnits - inv.reservedUnits,
-    })),
-  }))
+type Reservation = {
+  id: string
+  status: string
+  createdAt: string
+  updatedAt: string
+}
 
-  return {
-    productsWithStock,
-    metrics: {
-      totalProducts: products.length,
-      totalUnits: totalStats._sum.totalUnits || 0,
-      reservedUnits: totalStats._sum.reservedUnits || 0,
-      availableUnits: (totalStats._sum.totalUnits || 0) - (totalStats._sum.reservedUnits || 0),
-      expiringSoon: expiringSoonCount,
-    },
-  }
+type Warehouse = {
+  id: string
+  name: string
 }
 
 export default async function AnalyticsPage() {
-  const { productsWithStock, metrics } = await getAnalyticsData()
+  const [products, reservations, warehouses] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/products`).then(r => r.json() as Promise<Product[]>),
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/reservations`).then(r => r.json() as Promise<Reservation[]>),
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/warehouses`).then(r => r.json() as Promise<Warehouse[]>),
+  ])
 
   return (
     <Shell>
-      <div className="space-y-8 pb-10">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Inventory pressure, capacity, and reservation trends across all warehouses.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Total Products" value={metrics.totalProducts} icon="Package" description="Tracked SKUs across the network" />
-          <MetricCard title="Total Inventory" value={metrics.totalUnits} icon="Boxes" description="Physical units in stock" />
-          <MetricCard title="Reserved Units" value={metrics.reservedUnits} icon="Clock" description="Held during checkout" />
-          <MetricCard title="Expiring Soon" value={metrics.expiringSoon} icon="AlertCircle" description="Reservations releasing in < 2min" />
-        </div>
-
-        <WarehouseAnalytics products={productsWithStock} />
-      </div>
+      <IndustrialDashboard 
+        products={products} 
+        reservations={reservations} 
+        warehouses={warehouses} 
+      />
     </Shell>
   )
 }
