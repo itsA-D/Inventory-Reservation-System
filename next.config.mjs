@@ -4,6 +4,12 @@ const nextConfig = {
   images: {
     domains: ['picsum.photos', 'loremflickr.com'],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    outputFileTracingIncludes: {
+      '/*': ['./prisma/**/*'],
+    },
+  },
 }
 
 export default nextConfig

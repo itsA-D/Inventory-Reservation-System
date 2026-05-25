@@ -92,7 +92,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
           const payload = (await reservationsResponse.json()) as { count?: number }
           setPendingCount(payload.count ?? 0)
         }
-      } catch {
+      } catch (err) {
+        // Defensive: log the error so we can trace intermittent runtime failures
+        // eslint-disable-next-line no-console
+        console.error('Sidebar fetchCounts error', err)
         if (mounted) {
           setOrdersCount(0)
           setPendingCount(0)

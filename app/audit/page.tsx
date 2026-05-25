@@ -1,5 +1,6 @@
 import Shell from '@/components/layout/Shell'
 import { ReservationListItem, ReservationListItemSchema } from '@/lib/schemas'
+import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,15 +92,37 @@ function buildEvents(reservations: ReservationListItem[]): AuditEvent[] {
 }
 
 async function getAuditEvents(): Promise<AuditEvent[]> {
-  const response = await fetch('/api/reservations', { cache: 'no-store' })
+  // Use direct Prisma query on the server to avoid extra HTTP requests and
+  // potential runtime issues with relative fetch calls in server components.
+  const rows = await prisma.reservation.findMany({
+    include: {
+      product: true,
+      warehouse: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 
-  if (!response.ok) {
-    throw new Error('Failed to load audit log')
-  }
+  const reservations: ReservationListItem[] = rows.map((r) => ({
+    id: r.id,
+    status: r.status as ReservationListItem['status'],
+    quantity: r.quantity,
+    expiresAt: r.expiresAt ? r.expiresAt.toISOString() : r.updatedAt.toISOString(),
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    product: {
+      id: r.product.id,
+      name: r.product.name,
+      price: r.product.price as unknown as number,
+    },
+    warehouse: {
+      id: r.warehouse.id,
+      name: r.warehouse.name,
+      location: r.warehouse.location,
+    },
+  }))
 
-  const payload = (await response.json()) as unknown
-  const reservations = ReservationListItemSchema.array().parse(payload)
-  return buildEvents(reservations)
+  const parsed = ReservationListItemSchema.array().parse(reservations)
+  return buildEvents(parsed)
 }
 
 function formatTimestamp(timestamp: string) {

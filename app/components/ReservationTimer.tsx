@@ -18,14 +18,28 @@ function formatRemaining(totalSeconds: number): string {
 
 export default function ReservationTimer({ expiresAt }: ReservationTimerProps) {
   const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
-    const remaining = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
-    return Math.max(0, remaining)
+    try {
+      const remaining = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
+      return Math.max(0, remaining)
+    } catch (e) {
+      // Defensive: if expiresAt is malformed or parsing fails, treat as expired
+      // eslint-disable-next-line no-console
+      console.error('ReservationTimer init parse error', e)
+      return 0
+    }
   })
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      const remaining = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
-      setRemainingSeconds(Math.max(0, remaining))
+      try {
+        const remaining = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
+        setRemainingSeconds(Math.max(0, remaining))
+      } catch (err) {
+        // Defensive: avoid uncaught errors from invalid dates
+        // eslint-disable-next-line no-console
+        console.error('ReservationTimer tick error', err)
+        setRemainingSeconds(0)
+      }
     }, 1000)
 
     return () => {

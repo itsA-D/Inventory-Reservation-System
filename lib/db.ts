@@ -11,7 +11,19 @@ const deferredPropertyNames = new Set([
 ])
 
 function createPrismaClient(): PrismaClient {
-  return new PrismaClient({ log: ['query'] })
+  const isProd = process.env.NODE_ENV === 'production'
+  const dbUrl = isProd 
+    ? `file:${require('path').join(process.cwd(), 'prisma', 'dev.db')}`
+    : process.env.DATABASE_URL || 'file:./dev.db'
+    
+  return new PrismaClient({ 
+    log: ['query'],
+    datasources: {
+      db: {
+        url: dbUrl
+      }
+    }
+  })
 }
 
 function getPrismaClient(): PrismaClient {
