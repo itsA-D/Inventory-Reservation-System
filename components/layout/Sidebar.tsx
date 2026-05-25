@@ -207,8 +207,8 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
                       onClick={handleLinkClick}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'group relative flex min-h-11 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-[background-color,color,border-color] duration-200',
-                        !showFull && 'justify-center px-0',
+                        'group relative flex min-h-11 items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-sm font-medium transition-[background-color,color,border-color] duration-200',
+                        !showFull && 'justify-center gap-0 px-2',
                         isActive
                           ? 'border-[rgba(108,99,255,0.2)] bg-[var(--bg2)] text-[var(--brand2)]'
                           : 'border-transparent text-[var(--text2)] hover:bg-[var(--bg3)] hover:text-[var(--text1)]'
@@ -218,10 +218,19 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
                         color: isActive ? 'var(--brand2)' : undefined,
                       }}
                     >
-                      {isActive ? (
+                      {isActive && showFull ? (
                         <span className="absolute left-0 top-1/2 h-[55%] w-[3px] -translate-y-1/2 rounded-r-sm bg-[var(--brand)]" />
                       ) : null}
-                      <Icon className="h-5 w-5 shrink-0" />
+                      <span
+                        className={cn(
+                          'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-200',
+                          isActive
+                            ? 'bg-[rgba(108,99,255,0.14)]'
+                            : 'group-hover:bg-[var(--bg2)]'
+                        )}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                      </span>
                       {showFull && <span className="flex-1">{item.name}</span>}
                       {showFull && item.badge && badgeCount > 0 ? (
                         <Badge className={cn('border-0 font-mono text-[10px] font-bold', getBadgeClassName(item.badge))}>
@@ -270,7 +279,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
         animate={{ width: isCollapsed ? 60 : 220 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
         className="hidden h-screen shrink-0 flex-col overflow-hidden md:flex"
-        style={{ width: isCollapsed ? 60 : 220, transition: 'width 200ms ease' }}
+        style={{ width: isCollapsed ? 60 : 220 }}
       >
         <SidebarContent />
       </motion.div>
