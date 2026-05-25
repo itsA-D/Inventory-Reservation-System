@@ -28,10 +28,12 @@ type Warehouse = {
 }
 
 export default async function AnalyticsPage() {
+  // Use relative API paths so server-side rendering works regardless of NEXT_PUBLIC_APP_URL
+  const base = process.env.NEXT_PUBLIC_APP_URL || ''
   const [products, reservations, warehouses] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/products`).then(r => r.json() as Promise<Product[]>),
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/reservations`).then(r => r.json() as Promise<Reservation[]>),
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/warehouses`).then(r => r.json() as Promise<Warehouse[]>),
+    fetch(`${base}/api/products`, { cache: 'no-store' }).then(r => r.json() as Promise<Product[]>),
+    fetch(`${base}/api/reservations`, { cache: 'no-store' }).then(r => r.json() as Promise<Reservation[]>),
+    fetch(`${base}/api/warehouses`, { cache: 'no-store' }).then(r => r.json() as Promise<Warehouse[]>),
   ])
 
   return (
