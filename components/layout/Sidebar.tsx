@@ -64,7 +64,13 @@ const NAV_SECTIONS: NavSection[] = [
 
 export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
   const pathname = usePathname()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.localStorage.getItem('sidebar-collapsed') === '1'
+  })
   const [ordersCount, setOrdersCount] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
 
@@ -110,6 +116,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
       window.clearInterval(interval)
     }
   }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem('sidebar-collapsed', isCollapsed ? '1' : '0')
+  }, [isCollapsed])
 
   const sections = useMemo(() => NAV_SECTIONS, [])
 
