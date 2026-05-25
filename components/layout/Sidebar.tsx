@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Clock,
+  ChevronLeft,
   X,
   Shield,
   Package,
@@ -170,6 +171,15 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
               onClick={() => setIsMobileOpen(false)}
             >
               <X className="h-5 w-5" />
+            </Button>
+          ) : showFull ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto size-7 text-[var(--text2)] hover:bg-[var(--bg2)] hover:text-[var(--text1)]"
+              onClick={() => setIsCollapsed(true)}
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
           ) : null}
         </div>
